@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace SudokuSolver.Solver
 {
-    internal class SudokuSolutionSpace
+    public class SudokuSolutionSpace
     {
         public static readonly sbyte[] _VALID = new sbyte[9] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
         public readonly SudokuState _sudokuState;
@@ -13,11 +13,11 @@ namespace SudokuSolver.Solver
         public List<(int row, int col, sbyte val)> SolvedCells;
         public int Uncertainty
             => Enumerable.Range(0, 9).Cross(Enumerable.Range(0, 9)).Select(tpl =>
-                solutionSpace[tpl.Item1, tpl.Item2].Length).Sum();
+                solutionSpace[tpl.Item1, tpl.Item2].Length).Sum() - 81;
 
         public SudokuSolutionSpace(SudokuState sudokuState)
         {
-            if (sudokuState.BoardState == null)
+            if (sudokuState?.BoardState == null)
                 throw new ArgumentNullException(nameof(sudokuState));
 
             _sudokuState = sudokuState;
@@ -27,6 +27,8 @@ namespace SudokuSolver.Solver
 
         public static List<(int, int, sbyte)> CalculateSolutionItems(SudokuState state)
         {
+            if (state?.BoardState == null) throw new ArgumentNullException(nameof(state));
+
             var solvedCells = new List<(int r, int c, sbyte v)>();
 
             for (int row = 0; row < 9; row++)
@@ -51,6 +53,8 @@ namespace SudokuSolver.Solver
 
         private List<(int, int, sbyte)> CalculateSolutionItemsAndSetSolutionSpace(SudokuState state)
         {
+            if (state?.BoardState == null) throw new ArgumentNullException(nameof(state));
+
             var solvedCells = new List<(int r, int c, sbyte v)>();
 
             for (int row = 0; row < 9; row++)
