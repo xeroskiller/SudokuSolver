@@ -70,6 +70,15 @@ namespace SudokuSolver.Solver.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Maximum recursion depth reached..
+        /// </summary>
+        internal static string RecursionDepthException {
+            get {
+                return ResourceManager.GetString("RecursionDepthException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Column contains more than one of a single value..
         /// </summary>
         internal static string StateValidationColumnDegeneracyException {

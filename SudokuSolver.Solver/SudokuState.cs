@@ -7,18 +7,32 @@ namespace SudokuSolver.Solver
     public class SudokuState
     {
         public sbyte[,] BoardState { get; set; }
+        public bool IsSolved
+            => !(from sbyte item in BoardState
+                where item == 0
+                select 1).Any();
+
+        public string Serialized
+            => string.Join(string.Empty, (from sbyte item in BoardState select item));
 
         public SudokuState(sbyte[,] boardState)
         {
+            // Non null state
             if (boardState == null) 
                 throw new ArgumentNullException(nameof(boardState));
 
-            if (ValidateBoardState(boardState))
-                BoardState = boardState;
-            else throw new Exception();
+            // Set the state
+            BoardState = boardState;            
+
+            // Validate values and dimensions
+            ValidateBoardState(boardState);
         }
 
-        private static bool ValidateBoardState(sbyte[,] boardState)
+        // Clone to prevent ref issues
+        public SudokuState Clone() => new SudokuState(BoardState.Clone() as sbyte[,]);
+
+        // Throws when invalid.
+        private bool ValidateBoardState(sbyte[,] boardState)
         { 
             if (boardState.GetLength(0) != 9
                 || boardState.GetLength(1) != 9)
@@ -33,7 +47,7 @@ namespace SudokuSolver.Solver
             // Rows must only contain one instance, at most, of each number in (1..9)
             for (int i = 0; i < 9; i++)
             {
-                var x = boardState.GetRow(i);
+                var x = GetRowElements(i);
 
                 var y = (from j in x
                          where j != 0
@@ -46,7 +60,7 @@ namespace SudokuSolver.Solver
             // Columns must contain at most one instance of each number in (1..9)
             for (int i = 0; i < 9; i++)
             {
-                var x = boardState.GetColumn(i);
+                var x = GetColumnElements(i);
 
                 var y = (from j in x
                          where j != 0
@@ -62,7 +76,7 @@ namespace SudokuSolver.Solver
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    var x = boardState.GetSquare(i * 3, j * 3, 3 * i + 2, 3 * j + 2);
+                    var x = GetSquareElements(i, j);
 
                     var y = (from k in x
                              where k != 0
@@ -76,15 +90,19 @@ namespace SudokuSolver.Solver
             return true;
         }
 
+        // Set a single elements value on this state
         public bool SetElement(int row, int col, sbyte value)
         {
+            // Validate the request
             if (value < 1 || value > 9) return false;
             if (row < 1 || row > 9) return false;
             if (col < 1 || col > 9) return false;
 
+            // Validate the actual value
             if (GetConjunctiveElements(row, col).Contains(value))
                 return false;
 
+            // Set and return true
             BoardState[row, col] = value;
             return true;
         }
@@ -126,10 +144,19 @@ namespace SudokuSolver.Solver
             return buffer.ToArray();
         }
 
+        // Get array of distinct elements that share a row, column, or square with the cell specified
         public sbyte[] GetConjunctiveElements(int row, int col)
             => GetRowElements(row)
                 .Union(GetColumnElements(col))
                 .Union(GetSquareElements(row, col))
                 .Distinct().ToArray();
+
+        public override int GetHashCode()
+            => BoardState.GetHashCode();
+
+        public bool Equals(SudokuState other)
+            => this == null || other == null
+            ? false
+            : other.GetHashCode().Equals(GetHashCode());
     }
 }

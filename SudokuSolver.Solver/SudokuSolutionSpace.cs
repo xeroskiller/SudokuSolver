@@ -30,6 +30,11 @@ namespace SudokuSolver.Solver
             if (sudokuState?.BoardState == null)
                 throw new ArgumentNullException(nameof(sudokuState));
 
+            // Initialize solution space
+            for (int row = 0; row < 9; row++)
+                for (int col = 0; col < 9; col++)
+                    solutionSpace[row, col] = Array.Empty<sbyte>();
+
             // Store the initial state
             _sudokuState = sudokuState;
 

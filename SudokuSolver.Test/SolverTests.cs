@@ -1,62 +1,76 @@
 using SudokuSolver.Solver;
 using System;
 using Xunit;
+using System.Text.Json;
+using System.IO;
+using System.Linq;
+using System.Text;
+using Newtonsoft.Json;
 
 namespace SudokuSolver.Test
 {
     public class SolverTests
     {
         [Fact]
-        public void Test1()
+        public void Solve_ExamplePuzzlesFromJson_SucceedsAndMatches()
         {
-            sbyte[,] example1 = new sbyte[,]
-             {
-                { 0, 0, 0,   0, 0, 0,   2, 0, 0 },
-                { 0, 8, 0,   0, 0, 7,   0, 9, 0 },
-                { 6, 0, 2,   0, 0, 0,   5, 0, 0 },
-                                                
-                { 0, 7, 0,   0, 6, 0,   0, 0, 0 },
-                { 0, 0, 0,   9, 0, 1,   0, 0, 0 },
-                { 0, 0, 0,   0, 2, 0,   0, 4, 0 },
-                                                
-                { 0, 0, 5,   0, 0, 0,   6, 0, 3 },
-                { 0, 9, 0,   4, 0, 0,   0, 7, 0 },
-                { 0, 0, 6,   0, 0, 0,   0, 0, 0 },
-             };
+            var fileContents = File.ReadAllText("./SudokuExamples.json");
+            var sampleSet = JsonConvert.DeserializeObject<JsonObject>(fileContents);
 
-            sbyte[,] other = new sbyte[,]
+            foreach (var example in sampleSet.Examples)
             {
-                { 0, 9, 0,   1, 0, 2,   0, 0, 0 },
-                { 7, 0, 0,   0, 6, 0,   1, 0, 0 },
-                { 4, 0, 0,   0, 0, 3,   0, 0, 0 },
-                                                
-                { 3, 0, 6,   0, 9, 0,   8, 0, 0 },
-                { 0, 0, 0,   0, 0, 0,   0, 2, 4 },
-                { 0, 0, 0,   0, 2, 1,   9, 0, 5 },
-                                                
-                { 0, 0, 0,   0, 0, 0,   0, 3, 7 },
-                { 6, 0, 0,   7, 0, 0,   0, 0, 0 },
-                { 0, 8, 0,   0, 0, 0,   0, 0, 0 },
-            };
+                var solver = new SudokuSolved(example.InitialBoardState());
+                solver.Solve();
 
-            sbyte[,] solution1 = new sbyte[,]
-            {
-                { 9, 5, 7,   6, 1, 3,   2, 8, 4 },
-                { 4, 8, 3,   2, 6, 7,   1, 9, 6 },
-                { 6, 1, 2,   8, 4, 9,   5, 3, 7 },
-                                                
-                { 1, 7, 8,   3, 6, 4,   9, 5, 2 },
-                { 5, 2, 4,   9, 7, 1,   3, 6, 8 },
-                { 3, 6, 9,   5, 2, 8,   7, 4, 1 },
-                                                
-                { 8, 4, 5,   7, 9, 2,   6, 1, 3 },
-                { 2, 9, 1,   4, 3, 6,   8, 7, 5 },
-                { 7, 3, 6,   1, 8, 5,   4, 2, 9 },
-            };
+                Assert.True(solver.Solved);
+                Assert.NotNull(solver.SolvedState);
 
-            var solver = new Solver2(other);
+                Assert.Equal(SampleProblem.StringFromArray2D(solver.SolvedState.BoardState), example.Solution);
+            }
+        }
+    }
 
-            solver.Solve();
+    internal class JsonObject
+    {
+        public SampleProblem[] Examples { get; set; }
+    }
+
+    internal class SampleProblem
+    {
+        public string InitialState { get; set; }
+        public string Solution { get; set; }
+
+        public sbyte[,] InitialBoardState()
+            => Array2DFromString(InitialState);
+
+        public sbyte[,] SolutionState()
+            => Array2DFromString(Solution);
+        
+        private sbyte[,] Array2DFromString(string value)
+        {
+            if (InitialState.Length != 81)
+                throw new ArgumentException("Too many cells in test case.");
+
+            sbyte[,] buffer = new sbyte[9, 9];
+
+            for (int i = 0; i < 9; i++) for (int j = 0; j < 9; j++)
+                    buffer[i, j] = sbyte.Parse(InitialState.ElementAt(9 * i + j).ToString().Replace('.', '0'));
+
+            return buffer;
+        }
+
+        public static string StringFromArray2D(sbyte[,] array)
+        {
+            if (array.GetLength(0) != 9
+                || array.GetLength(1) != 9)
+                throw new ArgumentException("Must be 9x9");
+
+            var sb = new StringBuilder();
+
+            for (int i = 0; i < 9; i++) for (int j = 0; j < 9; j++)
+                    sb.Append(array[i, j]);
+
+            return sb.ToString();
         }
     }
 }

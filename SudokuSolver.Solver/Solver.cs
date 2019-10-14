@@ -1,25 +1,25 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace SudokuSolver.Solver
 {
-    public class Solver2
+    public class SudokuSolved
     {
         public SudokuState InitialState { get; }
-        private bool solved1 = false;
-        public bool Solved { get => Solved1; private set => Solved1 = value; }
-        public SudokuState SolvedState { get; }
-        public bool Solved1 { get => solved1; set => solved1 = value; }
+        private bool solved = false;
+        public bool Solved { get => solved; }
+        public SudokuState SolvedState { get; private set; }
 
-        public Solver2(sbyte[,] boardState) => InitialState = new SudokuState(boardState);
+        public SudokuSolved(sbyte[,] boardState) => InitialState = new SudokuState(boardState);
 
-        public bool Solve(bool useBranchingAlgorithms = true)
+        public void Solve(bool useBranchingAlgorithms = true)
         {
-            if (Solved1) return true;
+            if (Solved) return;
 
             int solvedCount;
-            SudokuState workingState = InitialState;
 
+            SudokuState workingState = InitialState;
             SudokuSolutionSpace space;
 
             do
@@ -28,49 +28,34 @@ namespace SudokuSolver.Solver
 
                 solvedCount = space.SolvedCells.Count;
 
-                foreach (var (row, col, val) in space.SolvedCells)
-                    workingState.SetElement(row, col, val); 
+                workingState = space.SolveAll();
             } while (solvedCount > 0);
+
+            if (space.State.IsSolved)
+            {
+                solved = true;
+                SolvedState = space.State;
+                return;
+            }
 
             if (useBranchingAlgorithms)
             {
-                var minUncertainty = Enumerable.Range(0, 9)
-                    .Cross(Enumerable.Range(0, 9))
-                    .Select(tpl => space.solutionSpace.Length).Min();
+                space = new SudokuSolutionSpace(workingState);
 
-                var minUncertaintyItems = Enumerable.Range(0, 9)
-                    .Cross(Enumerable.Range(0, 9))
-                    .Select(tpl => (row: tpl.Item1, col: tpl.Item2, sln: space.solutionSpace[tpl.Item1, tpl.Item2]))
-                    .Where(item => item.sln.Length == minUncertainty);
+                var treeSolver = new SudokuStateTreeSolver(space);
 
-                var possibleSolutions = new List<SudokuState>();
-
-                foreach (var tpl in minUncertaintyItems)
-                {
-                    foreach (var value in tpl.sln)
-                    {
-                        var buffer = workingState.BoardState;
-                        buffer[tpl.row, tpl.col] = value;
-
-                        var state = new SudokuState(buffer);
-                        SudokuSolutionSpace solution;
-
-                        do
-                        {
-                            solution = new SudokuSolutionSpace(state);
-
-                            solvedCount = solution.SolvedCells.Count;
-
-                            foreach (var (row, col, val) in solution.SolvedCells)
-                                workingState.SetElement(row, col, val);
-                        } while (solvedCount > 0);
-
-                        possibleSolutions.Add(state);
-                    }
-                }
+                SolvedState = treeSolver.ProposeSolution();
             }
+        }
+    }
 
-            return true;
+    public static class Extensions
+    {
+        public static IEnumerable<(T1, T2)> Cross<T1, T2>(this IEnumerable<T1> src, IEnumerable<T2> other)
+        {
+            if (src == null) throw new ArgumentNullException(nameof(src));
+            if (other == null) throw new ArgumentNullException(nameof(other));
+            foreach (var a in src) foreach (var b in other) yield return (a, b);
         }
     }
 }

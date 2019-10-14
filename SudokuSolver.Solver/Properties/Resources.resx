@@ -120,6 +120,9 @@
   <data name="GridDimensionExceptionMessage" xml:space="preserve">
     <value>Array must be 9x9.</value>
   </data>
+  <data name="RecursionDepthException" xml:space="preserve">
+    <value>Maximum recursion depth reached.</value>
+  </data>
   <data name="StateValidationColumnDegeneracyException" xml:space="preserve">
     <value>Column contains more than one of a single value.</value>
   </data>
