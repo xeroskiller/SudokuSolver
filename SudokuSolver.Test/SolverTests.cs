@@ -1,4 +1,3 @@
-using SudokuSolver.Solver;
 using System;
 using Xunit;
 using System.Text.Json;
@@ -6,26 +5,46 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
+using static SudokuSolver.Solver.Solver;
 
 namespace SudokuSolver.Test
 {
     public class SolverTests
     {
-        [Fact]
-        public void Solve_ExamplePuzzlesFromJson_SucceedsAndMatches()
+        private JsonObject testCases { get; set; }
+
+        public SolverTests()
         {
             var fileContents = File.ReadAllText("./SudokuExamples.json");
-            var sampleSet = JsonConvert.DeserializeObject<JsonObject>(fileContents);
+            testCases = JsonConvert.DeserializeObject<JsonObject>(fileContents);
+        }
 
-            foreach (var example in sampleSet.Examples)
+        [Fact]
+        public void Solve_ExamplePuzzlesFromJsonWithSolution_SucceedsAndMatches()
+        {
+            foreach (var (initial, solution) in testCases.Examples.Select(ex => (ex.InitialState, ex.Solution)))
             {
-                var solver = new SudokuSolved(example.InitialBoardState());
-                solver.Solve();
+                var board = DeserializeBoard(initial);
+                var solvedBoard = SolvePuzzle(board);
 
-                Assert.True(solver.Solved);
-                Assert.NotNull(solver.SolvedState);
+                Assert.NotNull(solvedBoard);
+                Assert.True(!(from sbyte m in solvedBoard where m == 0 select 1).Any());
 
-                Assert.Equal(SampleProblem.StringFromArray2D(solver.SolvedState.BoardState), example.Solution);
+                Assert.Equal(SerializeSudoku(solvedBoard), solution);
+            }
+        }
+
+        [Fact]
+        public void Solve_ExamplePuzzlesFromJsonWithoutSolution_Succeeds()
+        {
+            foreach (var puzzleString in testCases.ExamplesNoSolution)
+            {
+                var board = DeserializeBoard(puzzleString);
+                var solvedBoard = SolvePuzzle(board);
+
+                Assert.NotNull(solvedBoard);
+                Assert.True(!(from sbyte m in solvedBoard where m == 0 select 1).Any());
             }
         }
     }
@@ -33,44 +52,14 @@ namespace SudokuSolver.Test
     internal class JsonObject
     {
         public SampleProblem[] Examples { get; set; }
+
+        [JsonProperty("examplesNoSoln")]
+        public string[] ExamplesNoSolution { get; set; }
     }
 
     internal class SampleProblem
     {
         public string InitialState { get; set; }
         public string Solution { get; set; }
-
-        public sbyte[,] InitialBoardState()
-            => Array2DFromString(InitialState);
-
-        public sbyte[,] SolutionState()
-            => Array2DFromString(Solution);
-        
-        private sbyte[,] Array2DFromString(string value)
-        {
-            if (InitialState.Length != 81)
-                throw new ArgumentException("Too many cells in test case.");
-
-            sbyte[,] buffer = new sbyte[9, 9];
-
-            for (int i = 0; i < 9; i++) for (int j = 0; j < 9; j++)
-                    buffer[i, j] = sbyte.Parse(InitialState.ElementAt(9 * i + j).ToString().Replace('.', '0'));
-
-            return buffer;
-        }
-
-        public static string StringFromArray2D(sbyte[,] array)
-        {
-            if (array.GetLength(0) != 9
-                || array.GetLength(1) != 9)
-                throw new ArgumentException("Must be 9x9");
-
-            var sb = new StringBuilder();
-
-            for (int i = 0; i < 9; i++) for (int j = 0; j < 9; j++)
-                    sb.Append(array[i, j]);
-
-            return sb.ToString();
-        }
     }
 }
