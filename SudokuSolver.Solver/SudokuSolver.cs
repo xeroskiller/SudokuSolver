@@ -19,12 +19,21 @@ namespace SudokuSolver.Solver
             if (SimpleSolve(ref state))
                 return state.BoardState;
 
-            if (BranchingSolve(ref state))
+            if (BranchingSolve3(ref state))
                 return state.BoardState;
 
             Console.WriteLine();
 
             return null;
+        }
+
+        public static string SolvePuzzle([NotNull] string boardString)
+        {
+            var boardState = DeserializeBoard(boardString);
+
+            var solution = SolvePuzzle(boardState);
+
+            return SerializeSudoku(solution);
         }
 
         private static bool BranchingSolve(ref SudokuState state)
@@ -57,6 +66,33 @@ namespace SudokuSolver.Solver
             }
 
             return false;
+        }
+
+        private static bool BranchingSolve2(ref SudokuState state)
+        {
+            var tree = new SudokuStateTreeNode(state);
+
+            var solution = tree.TryGetSolution();
+
+            if (solution != null)
+            {
+                state = solution;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool BranchingSolve3(ref SudokuState state)
+        {
+            SudokuState solution;
+
+            using (var solver = new SudokuStateTree(state))
+                solution = solver.Solve();     
+
+            if (solution != null) state = solution;
+
+            return solution != null;
         }
 
         private static bool SimpleSolve(ref SudokuState state)

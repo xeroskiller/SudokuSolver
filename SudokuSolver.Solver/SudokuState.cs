@@ -30,6 +30,8 @@ namespace SudokuSolver.Solver
         // Boolean indicating whether this state is solved
         public bool IsSolved => UnsolvedCellCount == 0;
         public string Ser => string.Join(string.Empty, from sbyte m in BoardState select m);
+        public bool IsUnsolvable
+            => (from sbyte[] a in SolutionSpace where a.Length == 0 select 1).Any();
 
         public SudokuState([NotNull] sbyte[,] board)
         {
@@ -89,12 +91,23 @@ namespace SudokuSolver.Solver
 
                         // Set solution space as collection of all values minus conjunctive values
                         SolutionSpace[i, j] = _Valid_Values.Except(conjunctiveElements).ToArray();
-
-                        if (SolutionSpace[i, j].Length == 0) 
-                            throw new Exception();
                     }
                 }
             }
+        }
+
+        public bool SimpleSolve()
+        {
+            (int row, int col, sbyte value) solvedCell;
+
+            do
+            {
+                solvedCell = GetSolvedCell();
+
+                if (solvedCell == (-1, -1, -1)) break;
+            } while (SetCellValue(solvedCell.row, solvedCell.col, solvedCell.value));
+
+            return IsSolved;
         }
 
         public bool SetCellValue(ValueTuple<int, int, sbyte> solvedCell)
@@ -216,37 +229,37 @@ namespace SudokuSolver.Solver
 
         public override int GetHashCode() => BoardState.GetHashCode();
 
-        public static bool operator ==(SudokuState left, SudokuState right)
-        {
-            if (left is null)
-                return right is null;
-            return left.Equals(right);
-        }
+        //public static bool operator ==(SudokuState left, SudokuState right)
+        //{
+        //    if (left is null)
+        //        return right is null;
+        //    return left.Equals(right);
+        //}
 
-        public static bool operator !=(SudokuState left, SudokuState right)
-        {
-            return !(left == right);
-        }
+        //public static bool operator !=(SudokuState left, SudokuState right)
+        //{
+        //    return !(left == right);
+        //}
 
-        public static bool operator <(SudokuState left, SudokuState right)
-        {
-            return left is null ? right is object : left.CompareTo(right) < 0;
-        }
+        //public static bool operator <(SudokuState left, SudokuState right)
+        //{
+        //    return left is null ? right is object : left.CompareTo(right) < 0;
+        //}
 
-        public static bool operator <=(SudokuState left, SudokuState right)
-        {
-            return left is null || left.CompareTo(right) <= 0;
-        }
+        //public static bool operator <=(SudokuState left, SudokuState right)
+        //{
+        //    return left is null || left.CompareTo(right) <= 0;
+        //}
 
-        public static bool operator >(SudokuState left, SudokuState right)
-        {
-            return left is object && left.CompareTo(right) > 0;
-        }
+        //public static bool operator >(SudokuState left, SudokuState right)
+        //{
+        //    return left is object && left.CompareTo(right) > 0;
+        //}
 
-        public static bool operator >=(SudokuState left, SudokuState right)
-        {
-            return left is null ? right is null : left.CompareTo(right) >= 0;
-        }
+        //public static bool operator >=(SudokuState left, SudokuState right)
+        //{
+        //    return left is null ? right is null : left.CompareTo(right) >= 0;
+        //}
         #endregion
     }
 }
