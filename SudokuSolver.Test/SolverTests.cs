@@ -1,12 +1,10 @@
+using Newtonsoft.Json;
+using SudokuSolver.Solver;
 using System;
-using Xunit;
-using System.Text.Json;
 using System.IO;
 using System.Linq;
-using System.Text;
-using Newtonsoft.Json;
-using System.Threading.Tasks;
-using static SudokuSolver.Solver.Solver;
+using System.Text.Json;
+using Xunit;
 using SudokuSolver.Solver;
 
 namespace SudokuSolver.Test
@@ -26,13 +24,14 @@ namespace SudokuSolver.Test
         {
             foreach (var (initial, solution) in testCases.Examples.Select(ex => (ex.InitialState, ex.Solution)))
             {
-                var board = DeserializeBoard(initial);
-                var solvedBoard = SolvePuzzle(board);
+                var board = initial.DeserializeBoard();
+                var solver = new SudokuSolver();
+                var solvedBoard = solver.SolvePuzzle(board);
 
                 Assert.NotNull(solvedBoard);
                 Assert.True(!(from sbyte m in solvedBoard where m == 0 select 1).Any());
 
-                Assert.Equal(SerializeSudoku(solvedBoard), solution);
+                Assert.Equal(solvedBoard.SerializeSudoku(), solution);
             }
         }
 
@@ -152,7 +151,7 @@ namespace SudokuSolver.Test
         #endregion
         public void Solve_ExamplePuzzlesFromJsonWithoutSolution_Succeeds(string puzzleString)
         {
-            var board = DeserializeBoard(puzzleString);
+            var board = puzzleString.DeserializeBoard();
             var solvedBoard = SolvePuzzle(board);
 
             // Non null
@@ -174,7 +173,7 @@ namespace SudokuSolver.Test
         [Theory, InlineData("000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
         public void Solve_ReallyHardPuzzle_Eventually(string puzzleString)
         {
-            var board = DeserializeBoard(puzzleString);
+            var board = puzzleString.DeserializeBoard();
             var solvedBoard = SolvePuzzle(board);
 
             // Non null
@@ -199,7 +198,7 @@ namespace SudokuSolver.Test
         [InlineData("00000000000000000000000000000000000000000000000000000000000000000000000000000000")] // bad dims
         public void Solve_InvalidPuzzleState_Throws(string puzzleString)
         {
-            var board = DeserializeBoard(puzzleString);
+            var board = puzzleString.DeserializeBoard();
 
             Assert.Throws<ArgumentException>(() => SolvePuzzle(board));
         }

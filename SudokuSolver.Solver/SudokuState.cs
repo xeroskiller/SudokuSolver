@@ -70,7 +70,7 @@ namespace SudokuSolver.Solver
             => new SudokuState(BoardState.Clone() as sbyte[,]);
 
         public static bool IsValidBoardState(string boardState)
-            => IsValidBoardState(Solver.DeserializeBoard(boardState));
+            => IsValidBoardState(boardState.DeserializeBoard());
 
         /// <summary>
         /// Validates a board state for sudoku and returns a boolean value indicating its validity
@@ -122,8 +122,9 @@ namespace SudokuSolver.Solver
                 sbyte[] buffer = new sbyte[9];
 
                 for (int j = 0; j < 9; j++)
-                    if (boardState[3 * (i / 3), j] != 0)
-                        buffer[boardState[, ] - 1]++;
+                {
+
+                }                    
 
                 if (buffer.Any(c => c > 1)) return false;
             }

@@ -1,7 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using System.Collections.Generic;
-using static SudokuSolver.Solver.Solver;
+using static SudokuSolver.Solver.SudokuSolver;
 
 namespace SudokuSolver.Benchmark
 {

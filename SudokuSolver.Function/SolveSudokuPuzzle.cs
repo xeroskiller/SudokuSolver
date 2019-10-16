@@ -8,15 +8,23 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
+using SudokuSolver.Solver;
+
 namespace SudokuSolver.Function
 {
     public static class SolveSudokuPuzzle
     {
-        [FunctionName("Function1")]
+        [FunctionName("SolvePuzzle")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
+            log.LogInformation("API function started");
+            var body = new StreamReader(req.Body).ReadToEnd();
+
+            
+
+
             log.LogInformation("C# HTTP trigger function processed a request.");
 
             string name = req.Query["name"];
