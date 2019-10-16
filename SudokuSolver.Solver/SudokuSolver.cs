@@ -2,113 +2,74 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using System.Globalization;
 
 namespace SudokuSolver.Solver
 {
     public static class Solver
     {
-        private const int _Max_Branching_Depth = 20;
-
+        /// <summary>
+        /// Takes an array board state, representing a Sudoku puzzle state, and solve it, if possible.
+        /// </summary>
+        /// <param name="boardState">2D 9x9 sbyte[,] representing the board state, with 0's for unknown values.</param>
+        /// <returns>2D 9x9 sbyte[,] representing a corresponding solution.</returns>
         public static sbyte[,] SolvePuzzle([NotNull] sbyte[,] boardState)
         {
+            // Check for null board state
             if (boardState is null)
                 throw new ArgumentNullException(nameof(boardState));
 
+            // Create SudokuState object
             var state = new SudokuState(boardState);
 
-            if (SimpleSolve(ref state))
+            // Simple solve (deterministic, non branching)
+            state.SimpleSolve();
+
+            // Attempt a branching solution (can be CPUMemory intensive)
+            if (BranchingSolve(ref state))
                 return state.BoardState;
 
-            if (BranchingSolve3(ref state))
-                return state.BoardState;
-
-            Console.WriteLine();
-
+            // No solution?
             return null;
         }
 
+        /// <summary>
+        /// Takes a sudoku puzzle as an 81 character string, solves it, and returns a corresponding 81 character string solution.
+        /// </summary>
+        /// <param name="boardString">81-character string representing the board state, with 0's for unknown values</param>
+        /// <returns>81-character string representing a corresponding solution to the passed in puzzle state</returns>
         public static string SolvePuzzle([NotNull] string boardString)
         {
+            // Turn passed in string into a board (sbyte[9, 9])
             var boardState = DeserializeBoard(boardString);
 
+            // Solve it with the other method
             var solution = SolvePuzzle(boardState);
 
-            return SerializeSudoku(solution);
+            // Return serialized sulution
+            return SerializeSudoku(solution) ?? string.Empty;
         }
 
+        // Attempts a branching solution, by randomly assigning an unsolved cell of lowest entropy
+        //      And then attempting a simple solve. Continues to branch and prune unsolvables until
+        //      it solves it, or runs out of memory.
         private static bool BranchingSolve(ref SudokuState state)
         {
-            for (int i = 0; i < _Max_Branching_Depth; i++)
-            {
-                var workingState = state.Clone();
-                var buffer = workingState.GetKeystone();
-
-                (int row, int col, sbyte[] vals) x;
-
-                if (buffer.HasValue) x = buffer.Value;
-                else throw new Exception();
-
-                var children = new SudokuState[x.vals.Length];
-
-                for (int j = 0; j < x.vals.Length; j++)
-                {
-                    workingState.SetCellValue(x.row, x.col, x.vals[j]);
-
-                    if (SimpleSolve(ref workingState)) return true;
-
-                    children[j] = workingState;
-                }
-
-                var bestChild = children.OrderBy(child => child.UnsolvedCellCount).ThenBy(child => child.Uncertainty).First();
-
-                if (bestChild.UnsolvedCellCount < state.UnsolvedCellCount) state = bestChild;
-                else return false;
-            }
-
-            return false;
-        }
-
-        private static bool BranchingSolve2(ref SudokuState state)
-        {
-            var tree = new SudokuStateTreeNode(state);
-
-            var solution = tree.TryGetSolution();
-
-            if (solution != null)
-            {
-                state = solution;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static bool BranchingSolve3(ref SudokuState state)
-        {
+            // Buffer for solution state
             SudokuState solution;
 
+            // Use a state tree to do the branching
             using (var solver = new SudokuStateTree(state))
                 solution = solver.Solve();     
 
+            // If it returned a solution, set it
             if (solution != null) state = solution;
 
+            // Return boolean indicating whether this was successful in finding a solution
             return solution != null;
         }
 
-        private static bool SimpleSolve(ref SudokuState state)
-        {
-            (int row, int col, sbyte value) solvedCell;
-
-            do
-            {
-                solvedCell = state.GetSolvedCell();
-
-                if (solvedCell == (-1, -1, -1)) break;
-            } while (state.SetCellValue(solvedCell.row, solvedCell.col, solvedCell.value)); 
-
-            return state.IsSolved;
-        }
-
+        // Serializes a Sudoku state into an 81 character string
         public static string SerializeSudoku([NotNull] SudokuState sudokuState)
         {
             if (sudokuState is null) throw new ArgumentNullException(nameof(sudokuState));
@@ -121,9 +82,10 @@ namespace SudokuSolver.Solver
             return sb.ToString();
         }
 
+        // Serializes a board state into an 81 character string
         public static string SerializeSudoku([NotNull] sbyte[,] boardState)
         {
-            if (boardState is null) throw new ArgumentNullException(nameof(boardState));
+            if (boardState is null) return null;
 
             if (boardState.GetLength(0) != 9
                 || boardState.GetLength(1) != 9)
@@ -138,6 +100,7 @@ namespace SudokuSolver.Solver
             return sb.ToString();
         }
 
+        // Deserializes an 81-character sudoku string into a board state array
         public static sbyte[,] DeserializeBoard([NotNull] string serBoardState)
         {
             if (string.IsNullOrEmpty(serBoardState))
@@ -146,16 +109,20 @@ namespace SudokuSolver.Solver
             if (serBoardState.Length != 81)
                 throw new ArgumentException(BadDimensions);
 
+            var cinv = CultureInfo.InvariantCulture;
+
             sbyte[,] buffer = new sbyte[9, 9];
 
             for (int i = 0; i < 9; i++) for (int j = 0; j < 9; j++)
-                    buffer[i, j] = sbyte.Parse(serBoardState.ElementAt(9 * i + j).ToString().Replace('.', '0'));
+                    buffer[i, j] = sbyte.Parse(serBoardState
+                        .ElementAt(9 * i + j)
+                        .ToString(cinv)
+                        .Replace('.', '0'), cinv);
 
             return buffer;
         }
 
         private static string BadDimensions => "Invalid dimensions for sudoku puzzle.";
         private static string NullOrEmptyBoardState => "Cannot deserialize null or empty string.";
-        private static string CatastrophicFailure => "Catastrophic failure.";
     }
 }

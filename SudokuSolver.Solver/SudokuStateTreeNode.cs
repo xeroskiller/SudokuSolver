@@ -4,113 +4,95 @@ using System.Linq;
 
 namespace SudokuSolver.Solver
 {
-    internal class SudokuStateTreeNode
-    {
-        private static readonly int _MAX_RECURSION_DEPTH = 14;
-
-        public SudokuState State { get; set; }
-        public SudokuStateTreeNode ParentNode { get; set; }
-        public List<SudokuStateTreeNode> ChildNodes { get; set; } = new List<SudokuStateTreeNode>();
-
-        public bool IsRoot => ParentNode is null;
-
-        public SudokuStateTreeNode(SudokuState state)
-        {
-            State = state;
-        }
-
-        protected SudokuStateTreeNode(SudokuState state, SudokuStateTreeNode parentNode = null, SudokuStateTreeNode[] children = null)
-        {
-            State = state;
-            ParentNode = parentNode;
-            ChildNodes = children?.ToList() ?? new List<SudokuStateTreeNode>();
-        }
-
-        public SudokuState TryGetSolution()
-        {
-            var recursionDepth = 1;
-            return TryGetSolution_Internal(recursionDepth);
-        }
-
-        private SudokuState TryGetSolution_Internal(int recursionDepth)
-        {
-            if (recursionDepth > _MAX_RECURSION_DEPTH)
-                return null;
-
-            SudokuState solution;
-
-            if (ChildNodes.Count == 0)
-            {
-                var keystone = State.GetKeystone();
-
-                if (State.IsUnsolvable || keystone == null)
-                    return null;
-
-                foreach (var value in keystone.Value.vals)
-                {
-                    var newState = State.Clone();
-                    newState.SetCellValue(keystone.Value.row, keystone.Value.col, value);
-                    newState.SimpleSolve();
-
-                    if (newState.IsSolved) return newState;
-                    if (!newState.IsUnsolvable)
-                        ChildNodes.Add(new SudokuStateTreeNode(newState, this));
-                }
-            }
-
-            foreach (var child in ChildNodes.OrderBy(node => node.State.UnsolvedCellCount).ThenBy(node => node.State.Uncertainty))
-                if ((solution = child.TryGetSolution_Internal(++recursionDepth)) != null)
-                    return solution;
-
-            return null;
-        }
-    }
-
     public class SudokuStateTree : IDisposable
     {
-        private static readonly int _MAX_RECURSION_DEPTH = 20;
+        // Prevents killing our machine on particularly high entropy board states
+        //      Basically means we won't guess more than 20 unsolved cells.
+        //      Also means we won't examine n-children beyond n = _MAX_GUESS_COUNT
+        private const int _MAX_GUESS_COUNT = 20;
 
+        // Initial state this class was constructed with
         public SudokuState RootState { get; set; }
+        // Current working set of children, all of the same generation
         public List<SudokuState> WorkingSet { get; private set; }
         
+        // Ctor
         public SudokuStateTree(SudokuState state)
         {
             RootState = state;
         }
 
+        /// <summary>
+        /// Solves the puzzle based on the passed in initial state, if possible.
+        /// </summary>
+        /// <returns>SudokuState solution</returns>
         public SudokuState Solve()
         {
+            // Create a working set to contain items of the currently considered generation
             WorkingSet = new List<SudokuState>(new[] { RootState });
 
-            for (int i = 0; i < _MAX_RECURSION_DEPTH; i++)
+            // Loop up until maximum depth
+            for (int i = 0; i < _MAX_GUESS_COUNT; i++)
             {
+                // Create a new working set, for the next generation
                 var newWorkingSet = new List<SudokuState>();
 
+                // For each state in the current generation
                 foreach (var state in WorkingSet)
                 {
+                    // Get the keystone
                     var keystone = state.GetKeystone();
+
+                    // Skip if it is unsolvable
                     if (!keystone.HasValue) continue;
+
+                    // Deconstruct
                     var (row, col, vals) = keystone.Value;
 
+                    // Loop over possible keystone values
                     foreach (var value in vals)
                     {
+                        // Create a child as a clone of the parent
                         var child = state.Clone();
+
+                        // Set the value for the keystone on the new shild
                         child.SetCellValue(row, col, value);
+
+                        // Attempt a simple solution, in case this enable a bunch of assignments
                         child.SimpleSolve();
+
+                        // Return child if its solved
                         if (child.IsSolved) return child;
+
+                        // Skip keeping this child if it becomers unsolvable
                         if (child.IsUnsolvable) continue;
+
+                        // Add this child to the next generation's buffer list
                         newWorkingSet.Add(child);
                     }
                 }
 
+                // Set working set to be the next generation
                 WorkingSet = newWorkingSet; 
             }
 
-            Console.WriteLine();
-
+            // Null if truly unsolvable?
             return null;
         }
 
-        public void Dispose() { }
+        // I don't know why, but these prevent errors.
+        public void Dispose() 
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                // Managed resources
+            }
+        }
     }
 }

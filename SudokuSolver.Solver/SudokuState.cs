@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace SudokuSolver.Solver
 {
-    public class SudokuState : IEquatable<SudokuState>, IComparable<SudokuState>
+    public class SudokuState : IEquatable<SudokuState>
     {
         // List of all valid values
         private static readonly sbyte[] _Valid_Values
@@ -26,12 +26,11 @@ namespace SudokuSolver.Solver
         // Number of unsolved cells on the board
         public int UnsolvedCellCount => (from sbyte x in BoardState where x == 0 select 1).Count();
         // Sum of number of possible solutions for all possible cells
-        public int Uncertainty => (from sbyte[] x in SolutionSpace select x.Length).Sum();
+        public int Entropy => (from sbyte[] x in SolutionSpace select x.Length).Sum() - 81;
         // Boolean indicating whether this state is solved
         public bool IsSolved => UnsolvedCellCount == 0;
-        public string Ser => string.Join(string.Empty, from sbyte m in BoardState select m);
-        public bool IsUnsolvable
-            => (from sbyte[] a in SolutionSpace where a.Length == 0 select 1).Any();
+        // This happens to be the condition encountered when a branching step was invalid
+        public bool IsUnsolvable => (from sbyte[] a in SolutionSpace where a.Length == 0 select 1).Any();
 
         public SudokuState([NotNull] sbyte[,] board)
         {
@@ -70,6 +69,69 @@ namespace SudokuSolver.Solver
         public SudokuState Clone()
             => new SudokuState(BoardState.Clone() as sbyte[,]);
 
+        public static bool IsValidBoardState(string boardState)
+            => IsValidBoardState(Solver.DeserializeBoard(boardState));
+
+        /// <summary>
+        /// Validates a board state for sudoku and returns a boolean value indicating its validity
+        /// </summary>
+        /// <param name="boardState">2D 9x9 sbyte[,] representing board state</param>
+        /// <returns>Boolean value indicating if the passed in board state is valid</returns>
+        public static bool IsValidBoardState(sbyte[,] boardState)
+        {
+            if (boardState is null) return false;
+
+            // BoardState dimensions
+            if (boardState.GetLength(0) != 9
+                || boardState.GetLength(1) != 9)
+                return false;
+
+            // Values
+            for (int i = 0; i < 9; i++)
+                for (int j = 0; j < 9; j++)
+                    if (boardState[i, j] < 0 || boardState[i, j] > 9) 
+                        return false;
+
+            // Rows
+            for (int i = 0; i < 9; i++)
+            {
+                sbyte[] buffer = new sbyte[9];
+
+                for (int j = 0; j < 9; j++)
+                    if (boardState[i, j] != 0)
+                        buffer[boardState[i, j] - 1]++;
+
+                if (buffer.Any(x => x > 1)) return false;
+            }
+
+            // Cols
+            for (int y = 0; y < 9; y++)
+            {
+                sbyte[] buffer = new sbyte[9];
+
+                for (int x = 0; x < 9; x++)
+                    if (boardState[x, y] != 0)
+                        buffer[boardState[x, y] - 1]++;
+
+                if (buffer.Any(x => x > 1)) return false;
+            }
+
+            // Squares
+            for (int i = 0; i < 9; i++)
+            {
+                sbyte[] buffer = new sbyte[9];
+
+                for (int j = 0; j < 9; j++)
+                    if (boardState[3 * (i / 3), j] != 0)
+                        buffer[boardState[, ] - 1]++;
+
+                if (buffer.Any(c => c > 1)) return false;
+            }
+
+            return true;
+        }
+
+        // recalculates the solution space, based on the current board state
         private void CalculateSolutionSpace()
         {
             if (SolutionSpace is null)
@@ -96,7 +158,10 @@ namespace SudokuSolver.Solver
             }
         }
 
-        public bool SimpleSolve()
+        // Attempts a simple, deterministic solution. Cells with only one possible solution
+        //      are assigned, and the solution space is recalculated, until there are not more
+        //      solved cells, or the puzzle is solved.
+        internal bool SimpleSolve()
         {
             (int row, int col, sbyte value) solvedCell;
 
@@ -110,8 +175,21 @@ namespace SudokuSolver.Solver
             return IsSolved;
         }
 
+        /// <summary>
+        /// Set the value of a particular cell, then recalculate the solution space.
+        /// </summary>
+        /// <param name="solvedCell">Tuple indicating coordinates and value of cell to be assigned</param>
+        /// <returns>bool indicating success condition</returns>
         public bool SetCellValue(ValueTuple<int, int, sbyte> solvedCell)
             => SetCellValue(solvedCell.Item1, solvedCell.Item2, solvedCell.Item3);
+
+        /// <summary>
+        /// Set the value of a particular cell, then recalculate the solution space.
+        /// </summary>
+        /// <param name="row">row index of cell to be set</param>
+        /// <param name="col">column index of cell to be set</param>
+        /// <param name="value">value to set cell to</param>
+        /// <returns>bool indicating success condition</returns>
         public bool SetCellValue(int row, int col, sbyte value)
         {
             // Check values and ensure theyre reasonable
@@ -130,7 +208,7 @@ namespace SudokuSolver.Solver
             // Set value and solution space set
             BoardState[row, col] = value;
 
-            // Add  value to appropriate conjunctive element classes
+            // Add value to appropriate conjunctive element classes
             Rows[row].Add(value);
             Columns[col].Add(value);
             Squares[sqIdx].Add(value);
@@ -142,7 +220,7 @@ namespace SudokuSolver.Solver
         }
 
         // Returns enumerable of all cells with solutions available
-        public (int row, int col, sbyte value) GetSolvedCell()
+        internal (int row, int col, sbyte value) GetSolvedCell()
         {
             for (int i = 0; i < 9; i++) // Rows
                 for (int j = 0; j < 9; j++) // Cols
@@ -152,7 +230,7 @@ namespace SudokuSolver.Solver
             return (-1, -1, -1);
         }
 
-        public (int row, int col, sbyte value)[] GetAllSolvedCells()
+        internal (int row, int col, sbyte value)[] GetAllSolvedCells()
         {
             var results = new List<(int, int, sbyte)>();
 
@@ -164,7 +242,7 @@ namespace SudokuSolver.Solver
             return results.ToArray();
         }
 
-        public (int row, int col, sbyte[] vals)? GetKeystone()
+        protected internal (int row, int col, sbyte[] vals)? GetKeystone()
         {
             // Buffer for keystone
             (int row, int col, sbyte val)? uncCoords = null;
@@ -184,9 +262,32 @@ namespace SudokuSolver.Solver
                 : (uncCoords.Value.row, uncCoords.Value.col, SolutionSpace[uncCoords.Value.row, uncCoords.Value.col]);
         }
 
+        // Shortcut for indexing to get board state value
         public sbyte this[int row, int col] => BoardState[row, col];
 
+        // Equality is based strictly on the board state values
+        public bool Equals([AllowNull] SudokuState other)
+        {
+            if (this == null && other == null)
+                return true;
+            if (this != null && other != null
+                && GetHashCode().Equals(other.GetHashCode()))
+                return true;
+            return false;
+        }
+
+        // Equality is based strictly on the board state values
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as SudokuState);
+        }
+
+        // Based entirely on current board state values
+        public override int GetHashCode() => BoardState.GetHashCode();
+
         #region Square Trickery
+        // This is necessary to ease retrieving the conjunctive values from a cells
+        //      3x3 neighborhood
         private static readonly sbyte[,] _Square_Index_Mapping
             = new sbyte[9, 9]
             {
@@ -202,64 +303,6 @@ namespace SudokuSolver.Solver
             };
         private static sbyte SqIdxs(int row, int col)
             => _Square_Index_Mapping[row, col];
-        #endregion
-
-        #region IEquatable and IComparable
-        public int CompareTo([AllowNull] SudokuState other)
-            => (this) == null 
-                ? -1
-                : other != null 
-                    ? UnsolvedCellCount.CompareTo(other.UnsolvedCellCount) 
-                    : 1;
-
-        public bool Equals([AllowNull] SudokuState other)
-        {
-            if (this == null && other == null)
-                return true;
-            if (this != null && other != null
-                && GetHashCode().Equals(other.GetHashCode()))
-                return true;
-            return false;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return Equals(obj as SudokuState);
-        }
-
-        public override int GetHashCode() => BoardState.GetHashCode();
-
-        //public static bool operator ==(SudokuState left, SudokuState right)
-        //{
-        //    if (left is null)
-        //        return right is null;
-        //    return left.Equals(right);
-        //}
-
-        //public static bool operator !=(SudokuState left, SudokuState right)
-        //{
-        //    return !(left == right);
-        //}
-
-        //public static bool operator <(SudokuState left, SudokuState right)
-        //{
-        //    return left is null ? right is object : left.CompareTo(right) < 0;
-        //}
-
-        //public static bool operator <=(SudokuState left, SudokuState right)
-        //{
-        //    return left is null || left.CompareTo(right) <= 0;
-        //}
-
-        //public static bool operator >(SudokuState left, SudokuState right)
-        //{
-        //    return left is object && left.CompareTo(right) > 0;
-        //}
-
-        //public static bool operator >=(SudokuState left, SudokuState right)
-        //{
-        //    return left is null ? right is null : left.CompareTo(right) >= 0;
-        //}
         #endregion
     }
 }

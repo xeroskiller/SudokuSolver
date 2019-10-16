@@ -36,9 +36,8 @@ namespace SudokuSolver.Test
             }
         }
 
-        [Theory]
-        //[InlineData("000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
-        #region InlineData (112 cases)
+        [Theory]        
+        #region InlineData (111 cases)
         [InlineData("100007090030020008009600500005300900010080002600004000300000010040000007007000300")]
         [InlineData("000000070060010004003400200800003050002900700040080009020060007000100900700008060")]
         [InlineData("100500400009030000070008005001000030800600500090007008004020010200800600000001002")]
@@ -171,6 +170,41 @@ namespace SudokuSolver.Test
             // This throws if it fails any of the rules of sudoku anywhere
             Assert.NotNull(new SudokuState(solvedBoard));
         }
+
+        [Theory, InlineData("000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
+        public void Solve_ReallyHardPuzzle_Eventually(string puzzleString)
+        {
+            var board = DeserializeBoard(puzzleString);
+            var solvedBoard = SolvePuzzle(board);
+
+            // Non null
+            Assert.NotNull(solvedBoard);
+
+            // No zeros in the whole board
+            Assert.True(!(from sbyte m in solvedBoard where m == 0 select 1).Any());
+
+            // This throws if it fails any of the rules of sudoku anywhere
+            Assert.NotNull(new SudokuState(solvedBoard));
+        }
+
+
+        [Theory]
+        [InlineData("001000100000000000000000000000000000000000000000000000000000000000000000000000000")] // bad row
+        [InlineData("001000000000000000000000000000000000001000000000000000000000000000000000000000000")] // bad col
+        [InlineData("001000000100000000000000000000000000000000000000000000000000000000000000000000000")] // bad sq
+        [InlineData("001000100000000000000000000000000000001000000000000000000000000000000000000000000")] // bad row + col
+        [InlineData("001000000100000000000000000000000000001000000000000000000000000000000000000000000")] // bad col + sq
+        [InlineData("001000100100000000000000000000000000000000000000000000000000000000000000000000000")] // bad row + sq
+        [InlineData("001000100100000000000000000000000000000000000000000000001000000000000000000000000")] // bad row + col + sq
+        [InlineData("00000000000000000000000000000000000000000000000000000000000000000000000000000000")] // bad dims
+        public void Solve_InvalidPuzzleState_Throws(string puzzleString)
+        {
+            var board = DeserializeBoard(puzzleString);
+
+            Assert.Throws<ArgumentException>(() => SolvePuzzle(board));
+        }
+
+        // TODO :: Test for board state with invalid value(s)
     }
 
     internal class JsonObject
