@@ -1,19 +1,19 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
+using SudokuSolver.Solver.Implementations;
 using System.Collections.Generic;
-using static SudokuSolver.Solver.SudokuSolver;
 
 namespace SudokuSolver.Benchmark
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             BenchmarkRunner.Run<SudokuSolverBM>();
         }
     }
 
-    [RPlotExporter, RankColumn]
+    [RPlotExporter, RankColumn, MemoryDiagnoser]
     public class SudokuSolverBM
     {
         #region TestPuzzles
@@ -27,11 +27,12 @@ namespace SudokuSolver.Benchmark
             "100500400009030000070008005001000030800600500090007008004020010200800600000001002",
             "080000001007004020600300700002009000100060008030400000001700600090008005000000040",
             "100400800040030009009006050050300000000001600000070002004010900700800004020004080",
+            // "700603000900000200000000000309100000000050802000000400020040000000700030080000000", // This one is really hard
         };
         #endregion
 
         [Benchmark]
         public void Benchmark()
-            => SolvePuzzle(PuzzleString);
+            => new BranchingSudokuSolver().SolvePuzzle(PuzzleString);
     }
 }

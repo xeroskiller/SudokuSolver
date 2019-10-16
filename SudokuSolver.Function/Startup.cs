@@ -1,8 +1,7 @@
 ﻿using Microsoft.Azure.Functions.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using Microsoft.Extensions.DependencyInjection;
+using SudokuSolver.Solver.Implementations;
+using SudokuSolver.Solver.Interfaces;
 
 [assembly: FunctionsStartup(typeof(SudokuSolver.Function.Startup))]
 
@@ -12,7 +11,7 @@ namespace SudokuSolver.Function
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.Services.AddScoped
+            builder.Services.AddScoped<ISudokuSolver, BranchingSudokuSolver>();
         }
     }
 }

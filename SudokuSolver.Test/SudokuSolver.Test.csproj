@@ -23,4 +23,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ExtensionsTests\" />
+    <Folder Include="FunctionTests\" />
+  </ItemGroup>
+
 </Project>
