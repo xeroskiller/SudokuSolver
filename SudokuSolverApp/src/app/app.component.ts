@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { SudokuGridComponent } from './sudoku-grid/sudoku-grid.component'
 
 @Component({
   selector: 'app-root',

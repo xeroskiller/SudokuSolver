@@ -1,0 +1,44 @@
+<div class="content" role="main">
+
+    <mat-grid-list 
+        flex
+        class="primary" 
+        cols="3" 
+        rowHeight="1:1" 
+        gutterSize="10px">
+
+        <mat-grid-tile
+            *ngFor="let offset of offsets">
+
+            <div class="internalGridList">
+
+                <mat-grid-list
+                    class="primary" 
+                    cols="3" 
+                    rowHeight="1:1" 
+                    gutterSize="5px"
+                    layout-fill>
+                    
+                    <mat-grid-tile
+                        *ngFor="let tile of getTileSubset(offset)"
+                        style="border: 2px double;"
+                        [style.border-color]="tile.color"
+                        [style.background-color]="tile.backgroundColor"
+                        [style.color]="tile.color"
+                        class="flexTile">
+        
+                        <span class="su-number">
+                            {{tile.text}}
+                        </span>
+        
+                    </mat-grid-tile>
+        
+                </mat-grid-list>
+
+            </div>
+
+        </mat-grid-tile>
+
+    </mat-grid-list>
+
+</div>
