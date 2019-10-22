@@ -5,8 +5,11 @@ pool:
   vmImage: 'VS2017-Win2016'
 
 steps:
-- script:
-    dotnet restore
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'restore'
+    projects: '$(System.DefaultWorkingDirectory)/**/*.csproj'
+    feedsToUse: 'select'
 - task: DotNetCoreCLI@2
   displayName: 'dotnet build'
   inputs:
