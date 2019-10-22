@@ -20,6 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="SudokuExamples.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
