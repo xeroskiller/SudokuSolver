@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SudokuSolver.Solver.Interfaces;
 using System;
@@ -15,14 +16,18 @@ namespace SudokuSolver.Function
 {
     public static class SolveSudokuPuzzle
     {
+        public static readonly Regex unsolvedPuzzlePattern = new Regex(@"^[0-9\.\-\?]{81}$", RegexOptions.Compiled);
+        public static readonly Regex solvedPuzzlePattern = new Regex(@"^[1-9]{81}$", RegexOptions.Compiled);
+
         [FunctionName("SolvePuzzle")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
             ISudokuSolver solver,
+            IConfigurationRoot config,
             ILogger log)
         {
             // Set up buffer and config variables, with default for config
-            var cancelAfterTime = int.Parse(ConfigurationManager.AppSettings["MaximumProcessingTimeSeconds"] ?? "0");
+            var cancelAfterTime = int.Parse(config["MaximumProcessingTimeSeconds"] ?? "0");
             if (cancelAfterTime < 1 || cancelAfterTime > 240) cancelAfterTime = 120;
             string solution;
 
@@ -34,7 +39,7 @@ namespace SudokuSolver.Function
             string boardString = streamReader.ReadToEnd();
 
             // Validate using regex, 400 if fails
-            if (!Regex.IsMatch(boardString, @"^[0-9\.\-\?]{81}$"))
+            if (!unsolvedPuzzlePattern.IsMatch(boardString))
                 return new BadRequestObjectResult(ApiResponse.Failure(@"Invalid Sudoku puzzle: must match regex '^[0-9\.\-\?]{81}$'"));
 
             // Log simple validation
@@ -69,7 +74,7 @@ namespace SudokuSolver.Function
             }
 
             // Simple regex validation, should prevent false positives
-            if (Regex.IsMatch(solution, @"^[1-9]{81}$"))
+            if (solvedPuzzlePattern.IsMatch(solution))
             {
                 // Log this, but not the actual values
                 log.LogInformation("Solution pair calculated and returned.");

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -15,6 +16,16 @@ namespace SudokuSolver.Test.FunctionTests
     {
         private readonly static ILogger logger = NullLogger.Instance;
         private readonly static string FakeSolution = @"123456789123456789123456789123456789123456789123456789123456789123456789123456789";
+        private readonly static IConfigurationRoot mockConfig;
+
+        static SolvePuzzleFunctionTests()
+        {
+            mockConfig = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+        }
 
         [Theory]
         [MemberData(nameof(KnownSolutionStates))]
@@ -24,7 +35,7 @@ namespace SudokuSolver.Test.FunctionTests
             serviceMock.Setup(s => s.IsValidBoard(It.IsAny<string>())).Returns(true);
             serviceMock.Setup(s => s.SolvePuzzle(puzzleString)).Returns(solutionString);
 
-            var result = await SolveSudokuPuzzle.Run(CreateMockRequest(puzzleString).Object, serviceMock.Object, logger);
+            var result = await SolveSudokuPuzzle.Run(CreateMockRequest(puzzleString).Object, serviceMock.Object, mockConfig, logger);
 
             Assert.NotNull(result);
             Assert.True(result is OkObjectResult);
@@ -47,7 +58,7 @@ namespace SudokuSolver.Test.FunctionTests
             serviceMock.Setup(s => s.IsValidBoard(It.IsAny<string>())).Returns(true);
             serviceMock.Setup(s => s.SolvePuzzle(puzzleString)).Returns(FakeSolution);
 
-            var result = await SolveSudokuPuzzle.Run(CreateMockRequest(puzzleString).Object, serviceMock.Object, logger);
+            var result = await SolveSudokuPuzzle.Run(CreateMockRequest(puzzleString).Object, serviceMock.Object, mockConfig, logger);
 
             Assert.NotNull(result);
             Assert.True(result is OkObjectResult);
