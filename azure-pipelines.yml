@@ -78,7 +78,7 @@ jobs:
         workingDir: '$(System.DefaultWorkingDirectory)/SudokuSolverApp/'
         customCommand: 'run-script build'
     - script: |
-        dir SudokuSolverApp/dist
+        dir "./SudokuSolverApp/dist/"
       displayName: 'list cwd contents (verify build)'
     - task: AzureFileCopy@3
       inputs:
