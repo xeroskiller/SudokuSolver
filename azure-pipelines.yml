@@ -6,10 +6,9 @@ pool:
 
 steps:
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
   inputs:
     command: 'restore'
-    projects: '$(System.DefaultWorkingDirectory)/**/*.csproj'
-    feedsToUse: 'select'
 - task: DotNetCoreCLI@2
   displayName: 'dotnet build'
   inputs:
