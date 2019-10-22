@@ -1,42 +1,46 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
+variables:
+  azureSubscription: '{ARM ACCESS TOKEN NAME}'
+  functionappName: '{NAME OF FUNCTIONAPP}'
 
 trigger:
 - master
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'VS2017-Win2016'
 
 steps:
+- script:
+    dotnet restore
+    dotnet build --configuration Release
+    dotnet test
 - task: DotNetCoreCLI@2
-  displayName: 'dotnet restore'
+  displayName: 'Create function artifact'
   inputs:
-    command: 'restore'
-    feedsToUse: 'select'
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet build'
+    command: publish
+    arguments: '--configuration Release --output publish_output'
+    projects: '$(System.DefaultWorkingDirectory)/SudokuSolver.Function/SudokuSolver.Function.csproj'
+    publishWebProjects: false
+    modifyOutputPath: true
+    zipAfterPublish: false
+- task: ArchiveFiles@2
+  displayName: 'Archive files'
   inputs:
-    command: 'build'
-- task: DotNetCoreCLI@2
-  displayName: 'dotnet test'
-  inputs:
-    command: 'test'
-    arguments: '--collect "Code coverage"'
+    rootFolderOrFile: "$(System.DefaultWorkingDirectory)/publish_output/s"
+    includeRootFolder: false
+    archiveFile: "$(System.DefaultWorkingDirectory)/build$(Build.BuildId).zip"
 - task: AzureFunctionApp@1
   displayName: 'Deploy function'
   inputs:
-    azureSubscription: 'Pay-As-You-Go(bd69ef22-5fb9-4fb8-b97b-7a561beb695c)'
+    azureSubscription: '$(azureSubscription)'
     appType: 'functionApp'
-    appName: 'sudoku-solver-api'
+    appName: '$(functionappName)'
     package: '$(System.DefaultWorkingDirectory)/**/*.zip'
-    deploymentMethod: 'auto'
+    deploymentMethod: 'runFromPackage'
 - task: AzureFileCopy@3
   displayName: 'Deploy Angular App'
   inputs:
-    SourcePath: './SudokuSolverApp/dist'
-    azureSubscription: 'Pay-As-You-Go(bd69ef22-5fb9-4fb8-b97b-7a561beb695c)'
+    SourcePath: './SudokuSolverApp/dist/*.*'
+    azureSubscription: '$(azureSubscription)'
     Destination: 'AzureBlob'
     storage: 'sudokusolverapia6e3'
-    ContainerName: 'web'
+    ContainerName: '$web'
