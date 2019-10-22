@@ -6,7 +6,13 @@ pool:
 
 steps:
 - task: UseDotNet@2
-  displayName: 'Use .NET Core sdk'
+  displayName: 'Use .NET Core sdk 2.1'
+  inputs:
+    packageType: sdk
+    version: 2.1.x
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+- task: UseDotNet@2
+  displayName: 'Use .NET Core sdk 3.0'
   inputs:
     packageType: sdk
     version: 3.x
