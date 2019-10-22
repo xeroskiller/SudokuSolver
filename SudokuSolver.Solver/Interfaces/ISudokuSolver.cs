@@ -4,5 +4,6 @@
     {
         sbyte[,] SolvePuzzle(sbyte[,] boardState);
         string SolvePuzzle(string boardState);
+        bool IsValidBoard(string boardString);
     }
 }

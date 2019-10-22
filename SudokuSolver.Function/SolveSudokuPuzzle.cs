@@ -1,14 +1,15 @@
-using System;
-using System.IO;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-
-using SudokuSolver.Solver;
+using SudokuSolver.Solver.Interfaces;
+using System;
+using System.Configuration;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace SudokuSolver.Function
 {
@@ -16,26 +17,72 @@ namespace SudokuSolver.Function
     {
         [FunctionName("SolvePuzzle")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+            ISudokuSolver solver,
             ILogger log)
         {
+            // Set up buffer and config variables, with default for config
+            var cancelAfterTime = int.Parse(ConfigurationManager.AppSettings["MaximumProcessingTimeSeconds"] ?? "0");
+            if (cancelAfterTime < 1 || cancelAfterTime > 240) cancelAfterTime = 120;
+            string solution;
+
+            // Log start
             log.LogInformation("API function started");
-            var body = new StreamReader(req.Body).ReadToEnd();
 
-            
+            // Read body into string
+            StreamReader streamReader = new StreamReader(req.Body);
+            string boardString = streamReader.ReadToEnd();
 
+            // Validate using regex, 400 if fails
+            if (!Regex.IsMatch(boardString, @"^[0-9\.\-\?]{81}$"))
+                return new BadRequestObjectResult(ApiResponse.Failure(@"Invalid Sudoku puzzle: must match regex '^[0-9\.\-\?]{81}$'"));
 
-            log.LogInformation("C# HTTP trigger function processed a request.");
+            // Log simple validation
+            log.LogInformation("Sudoku puzzle contents and length validated by regular expression.");
 
-            string name = req.Query["name"];
+            // Validate using rules of sudoku, 400 if fails
+            if (!solver.IsValidBoard(boardString))
+                return new BadRequestObjectResult(ApiResponse.Failure($"Invalid board state: {{{boardString}}}"));
 
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            dynamic data = JsonConvert.DeserializeObject(requestBody);
-            name = name ?? data?.name;
+            // Log validation complete
+            log.LogInformation("Sudoku puzzle clues validated. Proceeding to attempt solve.");
 
-            return name != null
-                ? (ActionResult)new OkObjectResult($"Hello, {name}")
-                : new BadRequestObjectResult("Please pass a name on the query string or in the request body");
+            // Try to keep our return civil, so catch everything and use logging
+            try
+            {
+                // Create cancellation token source which cancels after specified time
+                using var cts = new CancellationTokenSource(cancelAfterTime * 1000);
+
+                // Wrap process to solve in a task, so we can time-limit
+                solution = await Task.Run(() => solver.SolvePuzzle(boardString), cts.Token);
+            }
+            // Cancelled implies it took too long, 200 with failure
+            catch (OperationCanceledException)
+            {
+                return new OkObjectResult(ApiResponse.Failure("Operation cancelled: timeout."));
+            }
+            // Dno what happened, 500
+            catch (Exception ex)
+            {
+                log.LogError(ex, "Exception encountered attempting to solve puzzle.");
+                return new StatusCodeResult(500);
+            }
+
+            // Simple regex validation, should prevent false positives
+            if (Regex.IsMatch(solution, @"^[1-9]{81}$"))
+            {
+                // Log this, but not the actual values
+                log.LogInformation("Solution pair calculated and returned.");
+
+                // 200 with solution
+                return new OkObjectResult(new ApiResponse(solution, "Success", true));
+            }
+            else
+            {
+                // Log failure and return 200 w/ failure
+                log.LogInformation("Solution was not found.");
+                return new OkObjectResult(ApiResponse.Failure("Failed to identify solution. Unsolvable?"));
+            }
         }
     }
 }

@@ -11,6 +11,9 @@ namespace SudokuSolver.Solver.Implementations.Internal
         private static readonly sbyte[] _Valid_Values
             = new sbyte[9] { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
+        // Simple minimum for clue count, to ensure we dont spend our whole life working the trivial puzzle
+        private const int _MIN_CLUE_COUNT = 17;
+
         // Values populated in a row, by row index
         private List<sbyte>[] Rows { get; set; } = new List<sbyte>[9];
         // Values populated in a column, by column index
@@ -136,6 +139,10 @@ namespace SudokuSolver.Solver.Implementations.Internal
 
                 if (buffer.Any(c => c > 1)) return false;
             }
+
+            // Check min clue count
+            if ((from sbyte x in boardState select x).Count(x => x > 0) < _MIN_CLUE_COUNT)
+                return false;
 
             return true;
         }

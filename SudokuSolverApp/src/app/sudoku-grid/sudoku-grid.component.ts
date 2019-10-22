@@ -13,6 +13,7 @@ export interface Tile {
 })
 export class SudokuGridComponent implements OnInit {
   defaultPuzzleString: string = "540021070009784012700000608002006100005407000496500837280905700904078000000263489";
+  
   boardState: number[][] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 0, 0, 0, 0], 
@@ -25,8 +26,6 @@ export class SudokuGridComponent implements OnInit {
     [0, 0, 0, 0, 0, 0, 0, 0, 0]
   ];
 
-  tiles: Tile[] = [];
-
   offsets: number[][] = [
     [0, 0], [0, 3], [0, 6],
     [3, 0], [3, 3], [3, 6],
@@ -35,7 +34,6 @@ export class SudokuGridComponent implements OnInit {
   
   constructor() { 
     this.boardState = this.boardFromString(this.defaultPuzzleString);
-    this.setTilesFrom(this.defaultPuzzleString);
   }
 
   ngOnInit() {    
@@ -65,15 +63,6 @@ export class SudokuGridComponent implements OnInit {
     return board;
   }
 
-  private setTilesFrom(s: string) {
-    if (!s) return;
-    if (s.length != 81) return;
-
-    for (let i = 0; i < 81; i++) {
-      this.tiles[i] = { text: s[i], color: (s[i] == "0" ? "red" : "white"), backgroundColor: (s[i] == "0" ? "pink" : "greenyellow")};
-    }
-  }
-
   getTileSubset(offset:number[]) {
     var result: Tile[] = new Array<Tile>(9);
 
@@ -83,6 +72,10 @@ export class SudokuGridComponent implements OnInit {
     }
 
     return result;
+  }
+
+  openDialog() {
+    alert("works");
   }
 
 }

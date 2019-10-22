@@ -72,6 +72,10 @@ namespace SudokuSolver.Solver.Implementations
             return solution != null;
         }
 
-        private string InvalidBoardState => "Invalid board state.";
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Reasons.")]
+        public bool IsValidBoard(string boardString)
+            => SudokuState.IsValidBoardState(boardString);
+
+        private static string InvalidBoardState => "Invalid board state.";
     }
 }

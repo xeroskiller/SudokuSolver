@@ -9,7 +9,6 @@ namespace SudokuSolver.Solver.Implementations.Internal
     internal class SudokuStateTree : IDisposable
     {
         private const int _MAX_GUESS_COUNT = 30;
-        private const int _MAX_SET_SIZE = 1000;
 
         // Initial state this class was constructed with
         public SudokuState RootState { get; set; }

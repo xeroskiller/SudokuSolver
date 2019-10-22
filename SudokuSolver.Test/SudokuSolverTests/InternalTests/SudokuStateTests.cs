@@ -33,5 +33,12 @@ namespace SudokuSolver.Test.SudokuSolverTests.InternalTests
             if (boardString.Length == 81) // Skipping one particular test case that fails the deserializer
                 Assert.False(SudokuState.IsValidBoardState(boardString));
         }
+
+        [Theory]
+        [InlineData("000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
+        public void IsValidBoardState_NotEnoughClues_ReturnsFalse(string boardString)
+        {
+            Assert.False(SudokuState.IsValidBoardState(boardString));
+        }
     }
 }

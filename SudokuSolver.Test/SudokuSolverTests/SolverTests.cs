@@ -10,19 +10,8 @@ using Xunit;
 
 namespace SudokuSolver.Test
 {
-    public class SolverTests
+    public class SolverTests : BaseTests
     {
-        private static JsonObject testCases { get; set; }
-        public static IEnumerable<object[]> ValidStates => testCases?.ExamplesNoSolution.Select(i => new[] { i });
-        public static IEnumerable<object[]> InvalidStates => testCases?.InvalidStates?.Select(i => new[] { i });
-        public static IEnumerable<object[]> KnownSolutionStates => testCases?.Examples?.Select(ex => new[] { ex.InitialState, ex.Solution });
-
-        static SolverTests()
-        {
-            var fileContents = File.ReadAllText("./SudokuExamples.json");
-            testCases = JsonConvert.DeserializeObject<JsonObject>(fileContents);
-        }
-
         [Theory]
         [MemberData(nameof(KnownSolutionStates))]
         public void Solve_ExamplePuzzlesFromJsonWithSolution_SucceedsAndMatches(string initialState, string solutionString)
@@ -63,26 +52,6 @@ namespace SudokuSolver.Test
             // This throws if it fails any of the rules of sudoku anywhere
             Assert.NotNull(new SudokuState(solvedBoard));
         }
-
-        // Yeah, we're not solving this without a better alg
-        //[Theory, InlineData("000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
-        //private void Solve_ReallyHardPuzzle_Eventually(string puzzleString)
-        //{
-        //    var board = puzzleString.DeserializeBoard();
-
-        //    var solver = new BranchingSudokuSolver();
-        //    var solvedBoard = solver.SolvePuzzle(board);
-
-        //    // Non null
-        //    Assert.NotNull(solvedBoard);
-
-        //    // No zeros in the whole board
-        //    Assert.True(!(from sbyte m in solvedBoard where m == 0 select 1).Any());
-
-        //    // This throws if it fails any of the rules of sudoku anywhere
-        //    Assert.NotNull(new SudokuState(solvedBoard));
-        //}
-
 
         [Theory]
         [MemberData(nameof(InvalidStates))]
