@@ -78,13 +78,11 @@ jobs:
         workingDir: '$(System.DefaultWorkingDirectory)/SudokuSolverApp/'
         customCommand: 'run-script build'
     - script: |
-        dir SudokuSolverApp
-        dir SucokuSolverApp/dist
-        dir SucokuSolverApp/dist/SudokuSolverApp
+        dir SudokuSolverApp/dist
       displayName: 'list cwd contents (verify build)'
     - task: AzureFileCopy@3
       inputs:
-        SourcePath: '$(System.DefaultWorkingDirectory)/SudokuSolverApp/dist/SudokuSolverApp/*'
+        SourcePath: '$(System.DefaultWorkingDirectory)/SudokuSolverApp/dist/*'
         azureSubscription: '$(azureSubscription)'
         Destination: 'AzureBlob'
         storage: 'sudokusolverapia6e3'
