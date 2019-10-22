@@ -60,9 +60,14 @@ jobs:
         appName: '$(functionappName)'
         package: '$(System.DefaultWorkingDirectory)/**/*.zip'
         deploymentMethod: 'runFromPackage'
+
 # Build and deploy our Angular app
 - job: Build_WebApp
   steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: '10.x'
+      displayName: 'Install Node.js'
     - task: Npm@1
       inputs:
         command: 'install'
@@ -72,6 +77,9 @@ jobs:
         command: 'custom'
         workingDir: '$(System.DefaultWorkingDirectory)/SudokuSolverApp/'
         customCommand: 'run-script build'
+    - script: |
+        dir
+      displayName: 'list cwd contents (verify build)'
     - task: AzureFileCopy@3
       inputs:
         SourcePath: '$(System.DefaultWorkingDirectory)/SudokuSolverApp/dist/SudokuSolverApp/*'
@@ -79,4 +87,5 @@ jobs:
         Destination: 'AzureBlob'
         storage: 'sudokusolverapia6e3'
         ContainerName: '$web'
-        AdditionalArgumentsForBlobCopy: '/V'
+        CleanTargetBeforeCopy: true
+        CopyFilesInParallel: true
