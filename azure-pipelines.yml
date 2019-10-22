@@ -39,7 +39,7 @@ steps:
 - task: AzureFileCopy@3
   displayName: 'Deploy Angular App'
   inputs:
-    SourcePath: './SudokuSolverApp/dist/*.*'
+    SourcePath: '$(System.DefaultWorkingDirectory)/SudokuSolverApp/dist/*.*'
     azureSubscription: '$(azureSubscription)'
     Destination: 'AzureBlob'
     storage: 'sudokusolverapia6e3'
