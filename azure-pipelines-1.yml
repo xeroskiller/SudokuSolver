@@ -1,0 +1,44 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: echo Hello, world!
+  displayName: 'Run a one-line script'
+
+- script: |
+    echo Add other tasks to build, test, and deploy your project.
+    echo See https://aka.ms/yaml
+  displayName: 'Run a multi-line script'
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'restore'
+    feedsToUse: 'select'
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'build'
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'test'
+    arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
+- task: AzureFunctionApp@1
+  inputs:
+    azureSubscription: 'Pay-As-You-Go(bd69ef22-5fb9-4fb8-b97b-7a561beb695c)'
+    appType: 'functionApp'
+    appName: 'sudoku-solver-api'
+    package: '$(System.DefaultWorkingDirectory)/**/*.zip'
+    deploymentMethod: 'auto'
+- task: AzureFileCopy@3
+  inputs:
+    SourcePath: './SudokuSolverApp/dist'
+    azureSubscription: 'Pay-As-You-Go(bd69ef22-5fb9-4fb8-b97b-7a561beb695c)'
+    Destination: 'AzureBlob'
+    storage: 'sudokusolverapia6e3'
+    ContainerName: 'web'
