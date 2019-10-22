@@ -10,25 +10,22 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
-
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet restore'
   inputs:
     command: 'restore'
     feedsToUse: 'select'
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
   inputs:
     command: 'build'
 - task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
   inputs:
     command: 'test'
     arguments: '--configuration $(buildConfiguration) --collect "Code coverage"'
 - task: AzureFunctionApp@1
+  displayName: 'Deploy function'
   inputs:
     azureSubscription: 'Pay-As-You-Go(bd69ef22-5fb9-4fb8-b97b-7a561beb695c)'
     appType: 'functionApp'
@@ -36,6 +33,7 @@ steps:
     package: '$(System.DefaultWorkingDirectory)/**/*.zip'
     deploymentMethod: 'auto'
 - task: AzureFileCopy@3
+  displayName: 'Deploy Angular App'
   inputs:
     SourcePath: './SudokuSolverApp/dist'
     azureSubscription: 'Pay-As-You-Go(bd69ef22-5fb9-4fb8-b97b-7a561beb695c)'
