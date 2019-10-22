@@ -7,8 +7,17 @@ pool:
 steps:
 - script:
     dotnet restore
-    dotnet build --configuration Release
-    dotnet test
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet build'
+  inputs:
+    command: 'build'
+    projects: '$(System.DefaultWorkingDirectory)/**/*.csproj'
+    arguments: '--configuration Release'
+- task: DotNetCoreCLI@2
+  displayName: 'dotnet test'
+  inputs:
+    command: 'test'
+    projects: '$(System.DefaultWorkingDirectory)/**/*.csproj'
 - task: DotNetCoreCLI@2
   displayName: 'Create function artifact'
   inputs:
