@@ -1,0 +1,13 @@
+<div mat-dialog-content class="internalGridList">
+    <mat-grid-list cols=3 layout-fill gutterSize="5px">
+        <mat-grid-tile
+            *ngFor="let n of choices"
+            class="flexTile">
+            <button mat-button [mat-dialog-close]="n" [style.background-color]="blue">
+                <span>
+                    {{ n }}
+                </span>
+            </button>
+        </mat-grid-tile>
+    </mat-grid-list>
+</div>

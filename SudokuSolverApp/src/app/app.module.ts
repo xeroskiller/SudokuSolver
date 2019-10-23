@@ -4,13 +4,14 @@ import { NgModule } from '@angular/core';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { SudokuGridComponent } from './sudoku-grid/sudoku-grid.component';
+import { SudokuGridComponent, SelectorDialog } from './sudoku-grid/sudoku-grid.component';
 import { DemoMaterialModule } from './material-module';
 
 @NgModule({
   declarations: [
     AppComponent,
-    SudokuGridComponent
+    SudokuGridComponent,
+    SelectorDialog,
   ],
   imports: [
     BrowserModule,
@@ -19,6 +20,7 @@ import { DemoMaterialModule } from './material-module';
     BrowserAnimationsModule,
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
+  entryComponents: [SelectorDialog]
 })
 export class AppModule { }
