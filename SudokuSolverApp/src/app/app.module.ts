@@ -4,7 +4,7 @@ import { NgModule } from '@angular/core';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { SudokuGridComponent, SelectorDialog } from './sudoku-grid/sudoku-grid.component';
+import { SudokuGridComponent, SelectorDialog, TileCardComponent } from './sudoku-grid/sudoku-grid.component';
 import { DemoMaterialModule } from './material-module';
 
 @NgModule({
@@ -12,6 +12,7 @@ import { DemoMaterialModule } from './material-module';
     AppComponent,
     SudokuGridComponent,
     SelectorDialog,
+    TileCardComponent,
   ],
   imports: [
     BrowserModule,

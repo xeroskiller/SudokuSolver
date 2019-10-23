@@ -1,5 +1,6 @@
-import { Component, OnInit } from '@angular/core';
-import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Component, OnInit, Input } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
+import { trigger, state, style, transition, animate } from '@angular/animations';
 
 export interface DialogData {
   value: number;
@@ -16,10 +17,10 @@ export interface Tile {
 @Component({
   selector: 'app-sudoku-grid',
   templateUrl: './sudoku-grid.component.html',
-  styleUrls: ['./sudoku-grid.component.styl']
+  styleUrls: ['./sudoku-grid.component.styl'],
 })
 export class SudokuGridComponent implements OnInit {
-  defaultPuzzleString: string = "540021070009784012700000608002006100005407000496500837280905700904078000000263489";
+  static defaultPuzzleString: string = "540021070009784012700000608002006100005407000496500837280905700904078000000263489";
   
   boardState: number[][] = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0], 
@@ -32,6 +33,17 @@ export class SudokuGridComponent implements OnInit {
     [0, 0, 0, 0, 0, 0, 0, 0, 0], 
     [0, 0, 0, 0, 0, 0, 0, 0, 0]
   ];
+  solvedState: string[][] = [
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+    ['unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', 'unsolved', ],
+  ];
 
   offsets: number[][] = [
     [0, 0], [0, 3], [0, 6],
@@ -40,34 +52,18 @@ export class SudokuGridComponent implements OnInit {
   ];
   
   constructor(public dialog: MatDialog) { 
-    this.boardState = this.boardFromString(this.defaultPuzzleString);
+    if (!SudokuGridComponent.defaultPuzzleString) return;
+
+    for (let index = 0; index < 81; index++) {
+      if (SudokuGridComponent.defaultPuzzleString[index] != "0")
+      {
+        this.boardState[Math.floor(index / 9)][index % 9] = +SudokuGridComponent.defaultPuzzleString[index];
+        this.solvedState[Math.floor(index / 9)][index % 9] = 'solved';
+      }
+    }
   }
 
   ngOnInit() {    
-  }
-
-  private boardFromString(boardString:string) {
-    if (!boardString) return;
-    if (boardString.length != 81) return;
-
-    var board:number[][] = [
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0], 
-      [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    ];
-
-    for (let index = 0; index < 81; index++) {
-      //console.debug("x: "+Math.floor(index / 9).toString()+"   y: "+(index % 9).toString());
-      board[Math.floor(index / 9)][index % 9] = +boardString[index];      
-    }
-
-    return board;
   }
 
   getTileSubset(offset:number[]) {
@@ -90,16 +86,16 @@ export class SudokuGridComponent implements OnInit {
   }
 
   openDialog(tile:Tile): void {
-    
-
     const dialogRef = this.dialog.open(SelectorDialog, {
       width: "150px",
       data: {value: +tile.text}
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      console.log(result);
-      if (result) this.boardState[tile.row][tile.col] = result.toString();
+      if (result) {
+        this.boardState[tile.row][tile.col] = result.toString();
+        this.solvedState[tile.row][tile.col] = 'solved';
+      }
     })
   }
 
@@ -115,7 +111,40 @@ export class SelectorDialog {
 
   constructor () { }
 
-  ngOnInit() {
+}
+
+@Component({
+  selector: 'app-tile-card',
+  template: '<mat-grid-tile [@solvedUnsolved]="solvedState" class="flexTile"><span class="su-number">{{ this.tile.text }}</span></mat-grid-tile>',
+  styleUrls: ['./sudoku-grid.component.styl'],
+  animations: [
+    trigger('solvedUnsolved', [
+      state('solved', style({
+        backgroundColor: 'palegreen',
+        color: 'green',
+        borderColor: 'green',
+      })),
+      state('unsolved', style({
+        backgroundColor: 'pink',
+        color: 'red',
+        borderColor: 'red',
+      })),
+      transition('solved => unsolved', [
+        animate('2s 1s ease-in')
+      ]),
+      transition('unsolved => solved', [
+        animate('1s 1s ease-out')
+      ])
+    ])
+  ]
+})
+export class TileCardComponent {
+  solvedState = 'unsolved';
+  @Input() tile: Tile;
+
+  constructor( ) { 
+    if (this.tile
+      && this.tile.text != "0") this.solvedState = 'solved';
   }
 
 }
